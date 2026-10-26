@@ -1,0 +1,82 @@
+// ============================================================
+// 命令库：FileToolkit —— 文件批处理工具集（UB / BotScript）
+// 适用：UiBot Creator「命令库」-> 源代码视图 直接粘贴
+// 用途：文件去重 / 批量重命名 / 导出目录树
+// 作者：Zhiyilang  版本：1.0.0  协议：MIT
+// 说明：全部使用 UiBot 自带 File / Directory 命令，无第三方依赖
+// ============================================================
+
+// -------- 子程序 1：按内容查找重复文件（先比大小再比内容）--------
+// 是否删除 = True 时删除后续重复文件；返回删除/标记的数量
+Function 文件去重(文件夹路径, 是否删除)
+    Dim files, i, j, szI, szJ, c1, c2, delCount, marked
+    files = Directory.GetAllFiles(文件夹路径, "*.*")
+    marked = Array()
+    For i = 0 To UBound(files)
+        marked(i) = False
+    Next
+    delCount = 0
+    For i = 0 To UBound(files) - 1
+        If marked(i) = False Then
+            szI = File.GetSize(files(i))
+            For j = i + 1 To UBound(files)
+                If marked(j) = False Then
+                    szJ = File.GetSize(files(j))
+                    If szI = szJ Then
+                        c1 = File.Read(files(i))
+                        c2 = File.Read(files(j))
+                        If c1 = c2 Then
+                            TracePrint "发现重复文件：", files(j)
+                            If 是否删除 = True Then
+                                File.Delete(files(j))
+                            End If
+                            marked(j) = True
+                            delCount = delCount + 1
+                        End If
+                    End If
+                End If
+            Next
+        End If
+    Next
+    文件去重 = delCount
+End Function
+
+// -------- 子程序 2：批量替换文件名中的文本 --------
+// 返回实际重命名的数量
+Function 批量重命名(文件夹路径, 查找文本, 替换文本)
+    Dim files, i, name, newName, cnt
+    files = Directory.GetAllFiles(文件夹路径, "*.*")
+    cnt = 0
+    For i = 0 To UBound(files)
+        name = File.GetName(files(i))   // 含扩展名
+        If String.InStr(name, 查找文本) > 0 Then
+            newName = String.Replace(name, 查找文本, 替换文本)
+            File.Rename(files(i), 文件夹路径 & "\" & newName)
+            cnt = cnt + 1
+        End If
+    Next
+    批量重命名 = cnt
+End Function
+
+// -------- 子程序 3：导出目录树到文本文件 --------
+Dim 全局树文本
+
+Function 导出目录树(文件夹路径, 输出文件)
+    全局树文本 = ""
+    Call 遍历目录(文件夹路径, "")
+    File.Write(输出文件, 全局树文本)
+    导出目录树 = True
+End Function
+
+Function 遍历目录(路径, 前缀)
+    Dim subs, files, i
+    subs = Directory.GetAllDirectories(路径)
+    files = Directory.GetAllFiles(路径, "*.*")
+    For i = 0 To UBound(subs)
+        全局树文本 = 全局树文本 & 前缀 & "+-- " & Directory.GetName(subs(i)) & Chr(13) & Chr(10)
+        Call 遍历目录(subs(i), 前缀 & "    ")
+    Next
+    For i = 0 To UBound(files)
+        全局树文本 = 全局树文本 & 前缀 & "-- " & File.GetName(files(i)) & Chr(13) & Chr(10)
+    Next
+End Function
