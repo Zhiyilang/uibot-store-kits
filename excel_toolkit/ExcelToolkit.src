@@ -1,0 +1,125 @@
+// ============================================================
+// 命令库：ExcelToolkit —— Excel 数据清洗工具集（UB / BotScript）
+// 适用：UiBot Creator「命令库」-> 源代码视图 直接粘贴
+// 用途：去重行 / 删除空行 / 合并多个工作簿 / 按列拆分
+// 作者：Zhiyilang  版本：1.0.0  协议：MIT
+// 说明：全部使用 UiBot 自带 Excel / Directory 命令，无第三方依赖
+// ============================================================
+
+// -------- 子程序 1：删除工作表中的空行（整行无任何内容则删除）--------
+Function Excel删除空行(文件路径, 表名)
+    Dim wb, arr, i, j, rowEmpty, newArr, outRow
+    wb = Excel.Open(文件路径, False)
+    arr = Excel.ReadRange(wb, 表名, 1, 1, -1, -1)   // 全表读入二维数组
+    newArr = Array()
+    outRow = 0
+    For i = 0 To UBound(arr, 1)
+        rowEmpty = True
+        For j = 0 To UBound(arr, 2)
+            If CStr(arr(i, j)) <> "" Then
+                rowEmpty = False
+                Exit For
+            End If
+        Next
+        If rowEmpty = False Then
+            ReDim Preserve newArr(outRow)
+            newArr(outRow) = arr(i)
+            outRow = outRow + 1
+        End If
+    Next
+    Excel.WriteRange(wb, 表名, 1, 1, newArr)
+    Excel.Close(wb, True)
+    Excel删除空行 = outRow
+End Function
+
+// -------- 子程序 2：按指定列删除重复行（保留首次出现）--------
+// 注意：依据列 从 1 开始计数（第 1 列 = 1）
+Function Excel去重行(文件路径, 表名, 依据列)
+    Dim wb, arr, i, j, seen, newArr, outRow, key, dup
+    wb = Excel.Open(文件路径, False)
+    arr = Excel.ReadRange(wb, 表名, 1, 1, -1, -1)
+    newArr = Array()
+    outRow = 0
+    For i = 0 To UBound(arr, 1)
+        key = CStr(arr(i, 依据列 - 1))   // 数组下标从 0 开始
+        dup = False
+        For j = 0 To outRow - 1
+            If CStr(newArr(j)(依据列 - 1)) = key Then
+                dup = True
+                Exit For
+            End If
+        Next
+        If dup = False Then
+            ReDim Preserve newArr(outRow)
+            newArr(outRow) = arr(i)
+            outRow = outRow + 1
+        End If
+    Next
+    Excel.WriteRange(wb, 表名, 1, 1, newArr)
+    Excel.Close(wb, True)
+    Excel去重行 = outRow
+End Function
+
+// -------- 子程序 3：合并文件夹内所有 xlsx 的指定表到一个新文件 --------
+Function Excel合并工作表(文件夹路径, 表名, 输出文件)
+    Dim files, f, srcWb, arr, allArr, r, outRow
+    files = Directory.GetAllFiles(文件夹路径, "*.xlsx")
+    allArr = Array()
+    outRow = 0
+    For f = 0 To UBound(files)
+        srcWb = Excel.Open(files(f), False)
+        arr = Excel.ReadRange(srcWb, 表名, 1, 1, -1, -1)
+        For r = 0 To UBound(arr, 1)
+            ReDim Preserve allArr(outRow)
+            allArr(outRow) = arr(r)
+            outRow = outRow + 1
+        Next
+        Excel.Close(srcWb, False)
+    Next
+    wb = Excel.Open(输出文件, False)   // 文件不存在则新建
+    Excel.WriteRange(wb, 表名, 1, 1, allArr)
+    Excel.Close(wb, True)
+    Excel合并工作表 = outRow
+End Function
+
+// -------- 子程序 4：按指定列的值拆分工作表为多个文件 --------
+// 注意：依据列 从 1 开始计数
+Function Excel按列拆分(文件路径, 表名, 依据列, 输出文件夹)
+    Dim wb, arr, i, key, buckets, keys, b, k, outFile, outWb, row, hit
+    wb = Excel.Open(文件路径, False)
+    arr = Excel.ReadRange(wb, 表名, 1, 1, -1, -1)
+    Excel.Close(wb, False)
+    buckets = Array()   // 每个元素是一个二维数组
+    keys = Array()      // 对应的分组 key
+    For i = 0 To UBound(arr, 1)
+        key = CStr(arr(i, 依据列 - 1))
+        hit = -1
+        For b = 0 To UBound(keys)
+            If keys(b) = key Then
+                hit = b
+                Exit For
+            End If
+        Next
+        If hit = -1 Then
+            ReDim Preserve keys(UBound(keys) + 1)
+            keys(UBound(keys)) = key
+            ReDim Preserve buckets(UBound(buckets) + 1)
+            buckets(UBound(buckets)) = Array(arr(i))
+        Else
+            row = buckets(hit)
+            ReDim Preserve row(UBound(row) + 1)
+            row(UBound(row)) = arr(i)
+            buckets(hit) = row
+        End If
+    Next
+    If Directory.Exist(输出文件夹) = False Then
+        Directory.Create(输出文件夹)
+    End If
+    For b = 0 To UBound(keys)
+        outFile = 输出文件夹 & "\" & keys(b) & ".xlsx"
+        outWb = Excel.Open(outFile, False)
+        Excel.WriteRange(outWb, 表名, 1, 1, buckets(b))
+        Excel.Close(outWb, True)
+    Next
+    Excel按列拆分 = UBound(keys) + 1
+End Function
