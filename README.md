@@ -1,5 +1,15 @@
 # UiBot Store 命令库套装（UB / BotScript）
 
+<!-- DIST-CTA -->
+## 📦 成品下载（免费 · 点开即下 · 无需注册）
+
+- [UiBot Excel 命令库](https://zhiyilang.github.io/dist/excel_toolkit.zip)
+- [UiBot 文件命令库](https://zhiyilang.github.io/dist/file_toolkit.zip)
+
+源码与成品均 MIT 开源。需要按你的表格规则改造或代做，见仓库顶部接单报价。
+
+---
+
 <!-- ORDER-CTA -->
 > **需要定制或代做？** 我承接 Excel 代做（¥50 起）/ 零依赖 Python 脚本定制（¥200 起）/ 影刀·UiBot 机器人（¥500 起）。
 > **先报价后付款、无预付款**，微信 / 支付宝结算，询价发 **2383844705@qq.com**（标题写「接单 + 需求类型」）。
